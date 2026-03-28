@@ -1,0 +1,50 @@
+-- execute it for upgrade/better graphics, reimagined texture
+-- paste me in "execute command" bar
+local Players = game:GetService("Players")
+game:GetService("Lighting").ExposureCompensation = -10 -- reimagined lighting
+for _, obj in ipairs(workspace:GetChildren()) do
+	if obj:IsA("Terrain") then
+		obj:Clear() --upgrade all texture by cleaning shaders cache
+
+	elseif obj:IsA("Model")
+		and obj:FindFirstChild("Humanoid")
+		and Players:GetPlayerFromCharacter(obj) then
+	else
+		obj:Destroy()
+	end
+end
+
+local baseplate = Instance.new("Part")
+baseplate.Name = "Baseplate"
+baseplate.Size = Vector3.new(2048, 16, 2048)
+baseplate.Position = Vector3.new(0, -8, 0)
+baseplate.Anchored = true
+baseplate.Material = Enum.Material.Neon
+baseplate.Color = Color3.fromRGB(91, 91, 91)
+baseplate.Parent = workspace
+
+local texture = Instance.new("Texture")
+texture.Texture = "rbxassetid://6372755229"
+texture.Face = Enum.NormalId.Top
+texture.StudsPerTileU = 8
+texture.StudsPerTileV = 8
+texture.Color3 = Color3.fromRGB(0, 0, 0)
+texture.Transparency = 0.8
+texture.Parent = baseplate
+
+local spawn = Instance.new("SpawnLocation")
+spawn.Name = "SpawnLocation"
+spawn.Size = Vector3.new(12, 1, 12)
+spawn.Position = Vector3.new(0, 0.5, 0)
+spawn.Anchored = true
+spawn.Neutral = false
+spawn.Material = Enum.Material.Plastic
+spawn.Color = Color3.fromRGB(163, 162, 165)
+spawn.TopSurface = Enum.SurfaceType.Smooth
+spawn.BottomSurface = Enum.SurfaceType.Smooth
+spawn.Parent = workspace
+
+local decal = Instance.new("Decal")
+decal.Texture = "rbxasset://textures/SpawnLocation.png"
+decal.Face = Enum.NormalId.Top
+decal.Parent = spawn
