@@ -1,35 +1,126 @@
-# This is a basic workflow to help you get started with Actions
-
 name: CI
 
-# Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
   push:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
   build:
-    # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
+      - name: Install dependencies
         run: |
-          curl https://Finprominnerz.info
+          python -m pip install --upgrade pip
+          pip install numpy pillow
+
+      - name: Run GIF generator script
+        run: |
+          python - << 'EOF'
+          import colorsys
+          import numpy as np
+          from PIL import Image
+
+          width, height = 1024, 1024
+          fps = 45
+          duration = 60
+          frames_count = fps * duration
+
+          np.random.seed(995)
+          grid_size = 256
+          rand_grid = np.random.rand(grid_size, grid_size)
+
+          def smooth_step(t):
+              return t * t * (3 - 2 * t)
+
+          def noise_2d(x, y):
+              xi = x.astype(int) % grid_size
+              yi = y.astype(int) % grid_size
+              xf = x - np.floor(x)
+              yf = y - np.floor(y)
+              u = smooth_step(xf)
+              v = smooth_step(yf)
+              v00 = rand_grid[xi, yi]
+              v10 = rand_grid[(xi + 1) % grid_size, yi]
+              v01 = rand_grid[xi, (yi + 1) % grid_size]
+              v11 = rand_grid[(xi + 1) % grid_size, (yi + 1) % grid_size]
+              x1 = v00 + u * (v10 - v00)
+              x2 = v01 + u * (v11 - v01)
+              return x1 + v * (x2 - x1)
+
+          def fbm(x, y, octaves=4):
+              val = np.zeros_like(x)
+              freq = 1.0
+              amp = 1.0
+              total_amp = 0.0
+              for _ in range(octaves):
+                  val += noise_2d(x * freq, y * freq) * amp
+                  total_amp += amp
+                  freq *= 2.0
+                  amp *= 0.5
+              return val / total_amp
+
+          x = np.linspace(0, 3, width)
+          y = np.linspace(0, 3, height)
+          xx, yy = np.meshgrid(x, y)
+
+          def generate_frame(t):
+              speed = 0.35
+              time = t * speed
+              q_x = fbm(xx + time, yy + time * 0.7, octaves=3)
+              q_y = fbm(xx + 5.2 + time * 0.8, yy + 1.3 - time, octaves=3)
+              r_x = fbm(xx + 4.0 * q_x + 1.7 + time, yy + 4.0 * q_y + 9.2, octaves=4)
+              r_y = fbm(xx + 4.0 * q_x + 8.3, yy + 4.0 * q_y + 2.8 + time, octaves=4)
+              final_noise = fbm(xx + 4.0 * r_x + time, yy + 4.0 * r_y - time, octaves=6)
+
+              noise_min = final_noise.min()
+              noise_max = final_noise.max()
+              norm_noise = (final_noise - noise_min) / (noise_max - noise_min)
+
+              hues = (0.22 + norm_noise * 0.93) % 1.0
+              sats = np.full_like(norm_noise, 0.99)
+              vals = np.full_like(norm_noise, 1.0)
+
+              hsv_to_rgb_vec = np.vectorize(colorsys.hsv_to_rgb)
+              r, g, b = hsv_to_rgb_vec(hues, sats, vals)
+
+              rgb_array = np.dstack((
+                  (r * 255).astype(np.uint8),
+                  (g * 255).astype(np.uint8),
+                  (b * 255).astype(np.uint8)
+              ))
+              return Image.fromarray(rgb_array, "RGB")
+
+          frames = []
+          print(f"Création de {frames_count} frames...")
+          for i in range(frames_count):
+              t = i / fps
+              print(f"Frame {i + 1}/{frames_count}", end="\r")
+              frames.append(generate_frame(t))
+
+          frames[0].save(
+              "iridescent_10sec.gif",
+              save_all=True,
+              append_images=frames[1:],
+              duration=int(1000 / fps),
+              loop=0
+          )
+          print("\nGIF terminé !")
+          EOF
+
+      - name: Upload GIF Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: iridescent-gif
+          path: iridescent_10sec.gif
